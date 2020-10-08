@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 public class DraggablePiece : Piece, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    public enum PieceColor { red, green, blue };
-    public PieceColor color;
+    public UnityEvent onMove;
 
     private GraphicRaycaster graphicRaycaster;
     private Transform canvasTransform;
@@ -83,7 +83,44 @@ public class DraggablePiece : Piece, IBeginDragHandler, IDragHandler, IEndDragHa
         originalSlot.piece = this;
 
         //Place in center
-        transform.SetParent(slot.transform);
+        Lineup();
+
+        onMove?.Invoke();
+    }
+
+    public void Shuffle()
+    {
+        int possibilities = 0;
+        foreach (Slot s in originalSlot.neighbours.GetAll())
+        {
+            if (s != null && s.piece == null)
+                possibilities += 1;
+        }
+
+        if (possibilities == 0)
+            return;
+
+        float p = Random.value;
+        foreach (Slot s in originalSlot.neighbours.GetAll())
+        {
+            if (s != null && s.piece == null)
+            {
+                //Basically discrete probability
+                p -= 1f / possibilities;
+                if (p <= 0)
+                {
+                    originalSlot.piece = null;
+                    originalSlot = s;
+                    originalSlot.piece = this;
+                    break;
+                }
+            }
+        }
+    }
+
+    public void Lineup()
+    {
+        transform.SetParent(originalSlot.transform);
         transform.localPosition = Vector3.zero;
     }
 }
